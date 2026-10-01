@@ -1,0 +1,70 @@
+jenkins:
+  systemMessage: "Secure Multi-Architecture Jenkins Remoting Platform - Controller"
+  numExecutors: 0
+  mode: EXCLUSIVE
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    roleBased:
+      roles:
+        global:
+          - name: "admin"
+            permissions:
+              - "Overall/Administer"
+            entries:
+              - user: "${JENKINS_ADMIN_USER}"
+  nodes:
+    - permanent:
+        name: "linux-x86"
+        remoteFS: "/home/jenkins/agent"
+        labelString: "linux x86 amd64 agent-a"
+        numExecutors: 2
+        mode: EXCLUSIVE
+        launcher:
+          inbound:
+            webSocket: true
+    - permanent:
+        name: "linux-x86-2"
+        remoteFS: "/home/jenkins/agent"
+        labelString: "linux x86 amd64 agent-b"
+        numExecutors: 2
+        mode: EXCLUSIVE
+        launcher:
+          inbound:
+            webSocket: true
+    - permanent:
+        name: "linux-arm64"
+        remoteFS: "/home/jenkins/agent"
+        labelString: "linux arm64 aarch64 agent-arm"
+        numExecutors: 1
+        mode: EXCLUSIVE
+        launcher:
+          inbound:
+            webSocket: true
+  clouds:
+    - docker:
+        name: "docker-cloud"
+        dockerApi:
+          dockerHost:
+            uri: "tcp://docker-socket-proxy:2375"
+        templates:
+          - labelString: "linux-amd64"
+            dockerTemplateBase:
+              image: "jenkins-agent:amd64"
+            remoteFs: "/home/jenkins/agent"
+            connector:
+              attach: {}
+            instanceCapStr: "2"
+            removeVolumes: true
+          - labelString: "linux-arm64"
+            dockerTemplateBase:
+              image: "jenkins-agent:arm64"
+            remoteFs: "/home/jenkins/agent"
+            connector:
+              attach: {}
+            instanceCapStr: "2"
+            removeVolumes: true

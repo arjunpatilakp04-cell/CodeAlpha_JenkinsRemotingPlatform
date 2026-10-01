@@ -1,0 +1,12 @@
+configuration-as-code:latest
+job-dsl:latest
+workflow-aggregator:latest
+git:latest
+matrix-auth:latest
+credentials-binding:latest
+ssh-slaves:latest
+ws-cleanup:latest
+prometheus:latest
+role-strategy:latest
+docker-plugin:latest
+docker-workflow:latest

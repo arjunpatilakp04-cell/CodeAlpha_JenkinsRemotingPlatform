@@ -1,0 +1,9 @@
+.env
+*.log
+jenkins_home/
+.env
+**/.env
+*.bak
+casc_error.txt
+context.txt
+jenkins_log.txt

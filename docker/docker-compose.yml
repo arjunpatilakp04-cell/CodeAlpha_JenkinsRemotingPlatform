@@ -1,0 +1,119 @@
+services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459
+    container_name: docker-socket-proxy
+    environment:
+      CONTAINERS: 1
+      IMAGES: 1
+      NETWORKS: 1
+      POST: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - jenkins-net
+    restart: unless-stopped
+
+  jenkins-controller:
+    build:
+      context: ../controller
+    container_name: jenkins-controller
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      - JENKINS_ADMIN_USER=${JENKINS_ADMIN_USER}
+      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD}
+      - DOCKER_HOST=tcp://docker-socket-proxy:2375
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - ../controller/casc:/var/jenkins_home/casc_configs
+    networks:
+      - jenkins-net
+    depends_on:
+      - docker-socket-proxy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  agent-linux-x86:
+    image: jenkins-agent:amd64-pinned
+    pull_policy: never
+    platform: linux/amd64
+    container_name: agent-linux-x86
+    restart: unless-stopped
+    user: jenkins
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 512
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /home/jenkins/agent:uid=1000,gid=1000,mode=0755
+    environment:
+      JENKINS_URL: http://jenkins-controller:8080
+      JENKINS_SECRET: ${AGENT_X86_SECRET}
+      JENKINS_AGENT_NAME: linux-x86
+      JENKINS_WEB_SOCKET: "true"
+    networks:
+      - jenkins-net
+    depends_on:
+      - jenkins-controller
+  agent-linux-x86-2:
+    image: jenkins-agent:amd64-pinned
+    pull_policy: never
+    platform: linux/amd64
+    container_name: agent-linux-x86-2
+    restart: unless-stopped
+    user: jenkins
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 512
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /home/jenkins/agent:uid=1000,gid=1000,mode=0755
+    environment:
+      JENKINS_URL: http://jenkins-controller:8080
+      JENKINS_SECRET: ${AGENT_X86_2_SECRET}
+      JENKINS_AGENT_NAME: linux-x86-2
+      JENKINS_WEB_SOCKET: "true"
+    networks:
+      - jenkins-net
+    depends_on:
+      - jenkins-controller
+  agent-linux-arm64:
+    image: jenkins-agent:arm64-pinned
+    pull_policy: never
+    platform: linux/arm64
+    container_name: agent-linux-arm64
+    restart: unless-stopped
+    user: jenkins
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 512
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /home/jenkins/agent:uid=1000,gid=1000,mode=0755
+    environment:
+      JENKINS_URL: http://jenkins-controller:8080
+      JENKINS_SECRET: ${AGENT_ARM64_SECRET}
+      JENKINS_AGENT_NAME: linux-arm64
+      JENKINS_WEB_SOCKET: "true"
+    networks:
+      - jenkins-net
+    depends_on:
+      - jenkins-controller
+volumes:
+  jenkins_home:
+
+networks:
+  jenkins-net:
+    driver: bridge
